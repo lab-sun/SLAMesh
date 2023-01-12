@@ -3,7 +3,7 @@
 
 The official implementation of SLAMesh. 
 
-The paer is under review. The code will be open-sourced upon acceptance of the publication.
+The paper is under review. The code will be open-sourced upon acceptance of the publication.
 
 ## Introduction
 
@@ -14,11 +14,9 @@ This work designs a **S**imultaneously **L**ocalization **A**nd **Mesh**ing syst
 ## Supplyment video
 
 On public dataset
-
 <a href="https://www.youtube.com/watch?v=bm9u0-d4giw" target="_blank"><img src="https://github.com/lab-sun/SLAMesh/blob/main/fig/cover.png" alt="video" width="85%" /></a>
 
 On real-world
-
 <a href="https://www.youtube.com/watch?v=-zMNndGmUho" target="_blank"><img src="https://github.com/lab-sun/SLAMesh/blob/main/fig/real_word_cover2.png" alt="video" width="85%" /></a>
 
 
