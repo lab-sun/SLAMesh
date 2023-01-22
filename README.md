@@ -3,7 +3,7 @@
 
 The official implementation of SLAMesh. 
 
-The paper has been accepted for presentation on ICRA 2023. The paper and code will be released after modification upon reviewer's comments.
+The paper has been accepted for presentation on **ICRA 2023**. The paper and code will be released after modification upon reviewer's comments.
 
 ## Introduction
 
