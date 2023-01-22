@@ -1,9 +1,9 @@
 # SLAMesh
-## Slamesh: Real-time Localization and Meshing for Lidar Sensors
+## SLAMesh: Real-time Localization and Meshing for Lidar Sensors
 
 The official implementation of SLAMesh. 
 
-The paper is under review. The code will be open-sourced upon acceptance of the publication.
+The paper has been accepted for presentation on ICRA 2023. The paper and code will be released after modification upon reviewer's comments.
 
 ## Introduction
 
