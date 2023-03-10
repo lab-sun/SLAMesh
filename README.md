@@ -3,7 +3,11 @@
 
 The official implementation of SLAMesh. 
 
-The paper has been accepted for presentation on **ICRA 2023**. The paper and code will be released after modification upon reviewer's comments.
+### Update ###
+
+03/10/2023, Preprint of our paper can be found on: [**paper**](https://arxiv.org/pdf/2303.05252.pdf 'title text'). Code will be relased soon.
+
+01/16/2023, The paper has been accepted for presentation on **ICRA 2023**, 
 
 ## Introduction
 
