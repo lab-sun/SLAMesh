@@ -1,5 +1,5 @@
 # SLAMesh
-## SLAMesh: Real-time Localization and Meshing for Lidar Sensors
+## SLAMesh: Real-time LiDAR Simultaneous Localization and Meshing
 
 The official implementation of SLAMesh. 
 
