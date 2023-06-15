@@ -30,6 +30,10 @@ On real-world
 
 
 ## Contact
+
+jianyuan.ruan@connect.polyu.hk
+
 yx.sun@polyu.edu.hk
+
 
 Website: https://yuxiangsun.github.io/
