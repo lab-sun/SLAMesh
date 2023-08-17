@@ -1,7 +1,7 @@
 # SLAMesh
 ## SLAMesh: Real-time LiDAR Simultaneous Localization and Meshing
 
-This is the code of SLAMesh. This repository archive the state when the paper was submitted so that others can verificate our result. 
+This is the code of SLAMesh. This repository archive the state when the paper was submitted so that others can verificate our result (wait a while). 
 
 **You are welcome to visit my [personal repository](https://github.com/RuanJY/SLAMesh) and raise issues there** so that I can receive immediate notifications. I may also update it more frequently but sometimes the result may slightly differ from the paper. 
 
