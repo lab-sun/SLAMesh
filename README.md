@@ -6,6 +6,7 @@ This is the code of SLAMesh. This repository archive the state when the paper wa
 **You are welcome to visit my [personal repository](https://github.com/RuanJY/SLAMesh) and raise issues there** so that I can receive immediate notifications. I may also update it more frequently but sometimes the result may slightly differ from the paper. 
 
 ### Update ###
+17/Aug/2023, Code released in the repo and also my [personal repository](https://github.com/RuanJY/SLAMesh).
 
 03/10/2023, Preprint of our paper can be found on: [**paper**](https://arxiv.org/pdf/2303.05252.pdf 'title text'). Code will be relased soon.
 
