@@ -1,0 +1,14 @@
+<launch>
+    <arg name="seq" default = "/00" />
+    <arg name="param" default = "" /> <!-- param is used for tuning "$(arg param)" -->
+    <arg name="data_path" default = "/home/ruanjy/HDD/dataset_all/others/puma/mai_city/mai_city/bin/sequences" />
+    <arg name="result_path" default = "$(find slamesh)/../../result/KITTI_odometry_evaluation_tool/data/kitti" />
+
+    <rosparam file="$(find slamesh)/config/maicity.yaml" command="load" />
+    <node pkg="slamesh" type="slamesh" name="slamesher" output="screen">
+        <param name="seq"        value="$(arg seq)"/>
+        <param name="file_loc_report"  value="$(arg result_path)"/>
+        <param name="file_loc_dataset" value="$(arg data_path)"/>
+    </node>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find slamesh)/config/rviz/slamesh_mesh_tool.rviz" required="false" />
+</launch>

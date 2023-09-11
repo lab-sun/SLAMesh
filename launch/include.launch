@@ -1,0 +1,17 @@
+<launch>
+<!--
+    use to avoid name conflict when run two slamsher node at the same time on the same ros.
+-->
+    <group ns="test_local">
+        <arg name="seq" default = "/00" />
+        <arg name="data_path" default = "/home/ruanjy/Dataset/sequences" />
+        <arg name="result_path" default = "$(find slamesh)/../../result/KITTI_odometry_evaluation_tool/data/kitti" />
+        <arg name="param" default = "" />
+        <include file="$(find slamesh)/launch/slamesh_kitti_odometry.launch">
+            <arg name="seq" value = "$(arg seq)" />
+            <arg name="data_path" value = "$(arg data_path)" />
+            <arg name="result_path" value = "$(arg result_path)" />
+            <arg name="param" value = "$(arg param)" />
+        </include>
+    </group>
+</launch>

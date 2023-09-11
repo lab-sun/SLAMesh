@@ -1,0 +1,37 @@
+slamesher:
+  # kitti meshing: visualize mesh map for video
+  #read param
+  use_sim_time: false 
+  grt_available: false 
+  odom_available: false 
+  read_offline_pcd: true 
+  dataset: 1
+  max_steps: 10000
+  #register param
+  range_max: 100
+  range_min: 1.2
+  register_times: 2
+  cross_overlap: true
+  cross_cell_overlap_length: 2
+  num_margin_old_cell: -1
+  point2mesh: true
+  residual_combination: true
+  #visualize parameter
+  meshing_tsdf: false
+  full_cover: true
+  visualisation_type: 3
+  #gp param
+  num_thread: 8
+  grid: 1.6
+  min_points_num_to_gp: 5
+  num_test: 6
+  
+  variance_register: 0.60
+  variance_map_update: 0.50
+  variance_map_show: 0.30
+  variance_min: 1.36
+  variance_sensor: 0.02
+  
+  test_param:  0
+
+
