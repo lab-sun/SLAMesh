@@ -7,6 +7,7 @@ slamesher:
   read_offline_pcd: false
   dataset: 1
   max_steps: 10000
+  save_mesh_map: true
   #register param
   range_max: 60
   range_min: 3.0

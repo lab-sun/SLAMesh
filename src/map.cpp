@@ -36,8 +36,10 @@ bool getPointCloud(PointMatrix & points_result, pcl::PointCloud<pcl::PointXYZ> &
             first = false;
         }
         if(!g_data.pcl_msg_buff_deque.empty()){
+            //get the message
             pcl::fromROSMsg(g_data.pcl_msg_buff_deque.front(), *pcl_raw_ptr);
             get_laser_time = g_data.pcl_msg_buff_deque.front().header.stamp.toSec();
+            g_data.pcl_msg_buff = g_data.pcl_msg_buff_deque.front();
             g_data.pcl_msg_buff_deque.pop_front();
         }
         else{
@@ -130,9 +132,11 @@ void  Map::dividePointsIntoCellInitMap(PointMatrix & points_raw){
     //allocate memory
     PointMatrix init_points_bucket;
     Cell init_cell;
-    int num_bucket = pow(2 * (range_max / grid) + 2, 3) / 1.3;//vertical FOV<90 will be enough, memory comsuming here
-    static std::vector<PointMatrix> ary_points_bucket(num_bucket, init_points_bucket);
-    static std::vector<Cell> ary_bucket_cell(num_bucket, init_cell);
+    //int num_bucket = pow(2 * (range_max / grid) + 2, 3) / 1.3;//vertical FOV<90 will be enough, memory comsuming here
+    int num_bucket = num_grid_x * num_grid_y * num_grid_z;//vertical FOV<90 will be enough, memory comsuming here
+
+    std::vector<PointMatrix> ary_points_bucket(num_bucket, init_points_bucket);
+    std::vector<Cell> ary_bucket_cell(num_bucket, init_cell);
 
     if(num_grid > ary_points_bucket.size()){
         //std::cout << "num_grid " << num_grid << " " << "ary_points_bucket.size " ;
@@ -221,22 +225,23 @@ void  Map::dividePointsIntoCell(PointMatrix & points_raw, const Map & map_glb, b
     //allocate memory
     PointMatrix init_points_bucket;
     Cell init_cell;
-    int num_bucket = pow(2 * (range_max / grid) + 2, 3) / 5;//vertical FOV<90 will be enough, you can decrease this
+    //int num_bucket = pow(2 * (range_max / grid) + 2, 3) / 5;//vertical FOV<90 will be enough, you can decrease this
+    int num_bucket = num_grid_x * num_grid_y * num_grid_z;//vertical FOV<90 will be enough, memory comsuming here
+    if(g_data.step == 1){
+        cells_now.resize(num_bucket);
+    }
     // initial size of pointMatrix to reduce memory comsumption here
     static std::vector<PointMatrix> ary_points_bucket(num_bucket, init_points_bucket);
     static std::vector<int> index_bucket_not_empty;
-
     if(num_grid > ary_points_bucket.size()){
-        //std::cout<<"num_grid "<<num_grid<<" "<<"ary_points_bucket.size " ;
-        ROS_ERROR("Num grid > reserved in ary_points_bucket!");
+        TicToc t_pushing_new_bucket;
         while(num_grid > ary_points_bucket.size()){
             ary_points_bucket.push_back(init_points_bucket);
-            //all_bucket_map_cell.push_back(init_cell);
             cells_now.push_back(std::pair<double, Cell> (0, init_cell));
             num_bucket++;
-            std::cout << ary_points_bucket.size() << " ";
         }
-        std::cout<<std::endl;
+        ROS_WARN("In dividePointsIntoCell, Num grid %d > reserved size in ary_points_bucket %d, pushing..., cost time %d  ms",
+                 num_grid, int(ary_points_bucket.size()), int(t_pushing_new_bucket.toc()));
     }
 
     //clear
@@ -1349,15 +1354,17 @@ bool  Map::outputMeshAsPly(const std::string& filename, const mesh_msgs::MeshGeo
     //std::ofstream stream(filename.c_str());
     std::ofstream stream;
     stream.open(filename, std::ios::out);
-    if(!stream){
-        ROS_WARN("Can not open outputMeshAsPly file");
-    };
     if (!stream) {
+        ROS_WARN("Can not open outputMeshAsPly file");
         std::cout <<"wrong file location of mesh_msg_to_save to save" <<std::endl;
         return false;
     }
 
     size_t num_points = 3 * mesh_msg_to_save.mesh_geometry.faces.size();
+    if(num_points == 0) {
+        ROS_WARN("Empty mesh msg");
+        return false;
+    }
     stream << "ply" << std::endl;
     stream << "format ascii 1.0" << std::endl;
     stream << "element vertex " << num_points << std::endl;

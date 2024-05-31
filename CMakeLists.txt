@@ -19,7 +19,6 @@ if(USE_VOXBLOX)
             std_msgs
             mesh_msgs
             mesh_msgs_conversions
-            voxblox_msgs
             )
 else()
     message("DONT USE_VOXBLOX")

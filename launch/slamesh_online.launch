@@ -2,7 +2,7 @@
     <arg name="seq" default = "/00" />
     <arg name="param" default = "" /> <!-- param is used for tuning "$(arg param)" -->
     <arg name="data_path" default = " " />
-    <arg name="result_path" default = "$(find slamesh)/../../result/KITTI_odometry_evaluation_tool/data/kitti" />
+    <arg name="result_path" default = "$(find slamesh)/../../slamesh_result/kitti" />
 
     <rosparam file="$(find slamesh)/config/online.yaml" command="load" />
     <node pkg="slamesh" type="slamesh" name="slamesher" output="screen">

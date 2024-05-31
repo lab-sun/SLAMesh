@@ -25,7 +25,7 @@ public:
     bool three_dir;//features fixed
     bool odom_available, read_offline_pcd, cross_overlap, grt_available, imu_feedback,
             meshing_tsdf, full_cover, save_raw_point_clouds, point2mesh{true},
-            residual_combination{true};
+            residual_combination{true}, save_mesh_map;
     int visualisation_type;
     int num_margin_old_cell;
     double bias_acc_x, bias_acc_y;
@@ -126,7 +126,7 @@ public:
     }
     void savePath2TxtKitti(std::ofstream & file_out, nav_msgs::Path & path_msg);
     void savePathTxt(std::ofstream & file_out, nav_msgs::Path & path_msg);
-    void saveResult(double code_whole_time, const PointMatrix & map_glb_point_filtered);
+    void saveResult(double code_whole_time, const PointMatrix & map_glb_point_filtered, Map & map_glb);
     void pose_print(ros::Publisher& cloud_pub) const;
     void accumulateRawPoint(pcl::PointCloud<pcl::PointXYZ> pcl_raw, Transf& transf_this_step);
 };

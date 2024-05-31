@@ -20,7 +20,7 @@ public:
     double stamp = -1;//timestamp
     int num_point = 0;
     const int resize_step = 64;// when size of point matrix is not enough, resize it
-    const int init_size = 32;//512 256
+    const int init_size = 0;//512 256
     Eigen::Matrix<double, 3, Eigen::Dynamic> point;
     Eigen::Matrix<double, 1, Eigen::Dynamic> variance;
     Point centroid{0,0,0};

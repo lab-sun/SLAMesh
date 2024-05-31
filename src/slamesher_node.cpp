@@ -153,7 +153,7 @@ void Log::initLog(std::string & log_file_path){
         }
     }
 }
-void Log::saveResult(double code_whole_time, const PointMatrix & map_glb_point_filtered){
+void Log::saveResult(double code_whole_time, const PointMatrix & map_glb_point_filtered, Map &  map_glb){
     //save report
     ROS_DEBUG("saveResult");
     std::cout<<"Saving result" <<std::endl;
@@ -207,18 +207,24 @@ void Log::saveResult(double code_whole_time, const PointMatrix & map_glb_point_f
             << "pose: " << "\n" << pose.leftCols(step+1) << "\n"
             << std::endl;
         file_loc_report_wrt << "raw_point_num_before_voxel_filter: "<<raw_point_num_before_voxel_filter;
-        std::cout << "Result saved in: " << param.file_loc_report << std::endl;
+        std::cout << "Report saved in: " << param.file_loc_report << std::endl;
         file_loc_report_wrt.close();
     }
     else{
-        std::cout <<"Result not saved" << std::endl;
+        std::cout <<"Result not saved, did you creat the folder?" << std::endl;
     }
     //save path
     savePath2TxtKitti(file_loc_path_wrt, path);
-    //savePathTxt(file_loc_path_wrt, path);
-    //savePathTxt(file_loc_path_odom_wrt, path_odom);
     if(param.grt_available){
         savePathTxt(file_loc_path_grt_wrt, path_grt);
+    }
+    //save mesh map
+    if(param.save_mesh_map){
+        //at the end, publish global mesh map, may cost seconds
+        std::string file_loc_mesh_ply = param.file_loc_report + param.seq + "_mesh.ply";
+        if(map_glb.outputMeshAsPly(file_loc_mesh_ply, map_glb.mesh_msg)){
+            std::cout << "Mesh map saved in: " << file_loc_mesh_ply << std::endl;
+        }
     }
     //save raw pcl
     if(param.save_raw_point_clouds){
@@ -230,6 +236,8 @@ void Log::saveResult(double code_whole_time, const PointMatrix & map_glb_point_f
         raw_pcl_store = pclVoxelFilter(cloudPointer, voxel);
         pcl::io::savePCDFileASCII(log_file_path_raw_pcl, raw_pcl_store);
     }
+    g_data.file_loc_path_wrt.close();
+    g_data.file_loc_path_grt_wrt.close();
 }
 void Log::pose_print(ros::Publisher & cloud_pub) const{//ok
     sensor_msgs::PointCloud cloud1 = matrix3DtoPclMsg(pose, step);
@@ -486,6 +494,7 @@ void Parameter::initParameter(ros::NodeHandle & nh){
     nh.param("slamesher/max_steps", max_steps, 1);
     std::cout<<"max_steps: "<<max_steps<<std::endl;
     nh.param("slamesher/file_loc_report", file_loc_report, std::string("not_set"));
+    nh.param("slamesher/save_mesh_map", save_mesh_map, false);
 
     //<!--  register param  -->-
     nh.param("slamesher/range_max",  range_max,  100.0);
@@ -647,6 +656,7 @@ void SLAMesher::imuIntegration(const sensor_msgs::ImuConstPtr & imu_msg){
 }
 void SLAMesher::groundTruthCallback(const geometry_msgs::PoseStamped::ConstPtr & ground_truth_msg){
     //used in motion capture system
+    //the ground truth is only use to align the first frame with the ground frame, and save both ground truth and slam path for easy comparison.
     ROS_DEBUG("GroundTruth seq: [%d]", ground_truth_msg->header.seq);
 
     //update grt_first_transf
@@ -711,7 +721,7 @@ void SLAMesher::imuCallback(const sensor_msgs::Imu::ConstPtr & imu_msg){
 }
 void SLAMesher::odomCallback(const nav_msgs::Odometry::ConstPtr & odom_msg){
     //receive odometry data
-    //ROS_INFO("Odometry seq: [%d]", odom_msg->header.seq);
+    ROS_INFO("Odometry seq: [%d]", odom_msg->header.seq);
     g_data.odometry_msg_buf.push(odom_msg);
     g_data.transf_odom_now = PoseWithCovariance2transf(odom_msg->pose);
 }
@@ -730,17 +740,21 @@ bool SLAMesher::visualize(Map & map_glb, Map & map_now, int option){
     path_odom_pub.publish(g_data.path_odom);
     path_grt_pub. publish(g_data.path_grt);
 
-    // 0 no output
-    // 1 publish vertices as point cloud, every current scan and skipped map glb
-    // 2 use mesh_tools to visualize mesh, only mesh inside updated cells
-    // 3 use mesh_tools to visualize mesh, updated cells and skipped map mesh glb
+//    Because mesh-tools rviz plugin do not support incremental mesh intersection, three visualization mode are provided
+//    visualisation_type:
+//    0, publish registered raw_points_in_world, like fast-lio, lio sam
+//    1, + publish the vertices of mesh as point cloud, each scan + (1/n) map global
+//    2, + visualize local updated mesh, each scan
+//    3, + visualize global mesh, (1/n) frame
+//    after finish whole process, the global mesh map will be visualized in any mode
+
+    //pub current scan
+    //pub aligned raw points in the world frame
+    scanPrint3D(raw_points_in_world_pub, map_now.points_turned, 1);
 
     if(option == 0){
         return true;
     }
-    //pub current scan
-    //pub aligned raw points in the world frame
-    scanPrint3D(raw_points_in_world_pub, map_now.points_turned, 1);
 
     //pub current scan vertices as pcl
     map_now.filterVerticesByVariance(param.variance_register);
@@ -758,7 +772,7 @@ bool SLAMesher::visualize(Map & map_glb, Map & map_now, int option){
         mesh_pub_local.publish(map_now.mesh_msg);
     }
 
-
+    // after each pub_map_glb_count frame, publish the global map
     static int pub_map_glb_count = 0;
     int skip_map_glb_pub = 50, skip_map_glb_point = 1;
     pub_map_glb_count ++;
@@ -772,9 +786,6 @@ bool SLAMesher::visualize(Map & map_glb, Map & map_now, int option){
             // mesh_tool total map
             map_glb.filterMeshGlb();
             mesh_pub.publish(map_glb.mesh_msg);
-        }
-        if(option == 4){
-
         }
 
         //for debug: normal
@@ -790,6 +801,8 @@ void SLAMesher::pubTf(){
     Transf transf_now = g_data.T_seq[g_data.step];
     //pub odometry msg
     nav_msgs::Odometry odom_msg;
+    odom_msg.header.frame_id = "/map";
+    odom_msg.child_frame_id = "/slamesher_odom";
     if(param.read_offline_pcd){
         ros::Time now_time = ros::Time::now();
         odom_msg.header.stamp = now_time;
@@ -864,17 +877,9 @@ void SLAMesher::process(){
     if(g_data.step == param.max_steps){
         std::cout<<"Reach Max Step, exit"<<std::endl;
     }
-    bool save_mesh_map = false;
     map_glb.filterMeshGlb();
     mesh_pub.publish(map_glb.mesh_msg);
-    if(save_mesh_map){
-        //at the end, publish global mesh map, may cost seconds
-        std::string file_loc_mesh_ply = param.file_loc_report + param.seq + "_mesh.ply";
-        map_glb.outputMeshAsPly(file_loc_mesh_ply, map_glb.mesh_msg);
-    }
-    g_data.saveResult(t_whole.toc(), map_glb.vertices_filted);
-    g_data.file_loc_path_wrt.close();
-    g_data.file_loc_path_grt_wrt.close();
+    g_data.saveResult(t_whole.toc(), map_glb.vertices_filted, map_glb);
 }
 SLAMesher::SLAMesher(ros::NodeHandle & nh_, Parameter & param_, Log & g_data_) : nh (nh_), param(param_), g_data(g_data_){
     odom_pub          = nh.advertise<nav_msgs::Odometry>("/lidar_odometry", 1);

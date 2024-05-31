@@ -5,7 +5,7 @@
     <group ns="test_local">
         <arg name="seq" default = "/00" />
         <arg name="data_path" default = "/home/ruanjy/Dataset/sequences" />
-        <arg name="result_path" default = "$(find slamesh)/../../result/KITTI_odometry_evaluation_tool/data/kitti" />
+        <arg name="result_path" default = "$(find slamesh)/../../slamesh_result/kitti" />
         <arg name="param" default = "" />
         <include file="$(find slamesh)/launch/slamesh_kitti_odometry.launch">
             <arg name="seq" value = "$(arg seq)" />
