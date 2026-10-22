@@ -3,7 +3,6 @@ project(slamesh)
 
 SET(CMAKE_CXX_FLAGS "-std=c++14 -Wno-deprecated-declarations -Wno-dev")
 set(CMAKE_BUILD_TYPE "Release")
-set(catkin_DIR /opt/ros/kinetic/share/catkin/cmake)
 
 #ros
 #add_compile_definitions(VOXBLOX)
