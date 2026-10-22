@@ -1,0 +1,37 @@
+name: host-test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  host-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        sanitize: [OFF, ON]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libeigen3-dev cmake g++ clang
+
+      - name: Configure
+        env:
+          CC: ${{ matrix.compiler == 'clang' && 'clang' || 'gcc' }}
+          CXX: ${{ matrix.compiler == 'clang' && 'clang++' || 'g++' }}
+        run: cmake -S tests/host -B build-tests -DSANITIZE=${{ matrix.sanitize }}
+
+      - name: Build
+        run: cmake --build build-tests
+
+      - name: Test
+        env:
+          ASAN_OPTIONS: halt_on_error=1:detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          ctest --test-dir build-tests --output-on-failure
+          ./build-tests/test_point_matrix 2000
