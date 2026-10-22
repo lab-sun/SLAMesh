@@ -131,12 +131,23 @@ public:
         }
         int space_left = int(point.cols()) - (points_add.num_point + num_point);
         if(space_left < -1*resize_step){
-            point.conservativeResize(Eigen::NoChange_t(3), points_add.num_point + num_point + resize_step);
-            variance.conservativeResize(Eigen::NoChange_t(1), points_add.num_point + num_point + resize_step);
+            int old_point_cols = int(point.cols());
+            int old_variance_cols = int(variance.cols());
+            int new_cols = points_add.num_point + num_point + resize_step;
+            point.conservativeResize(Eigen::NoChange_t(3), new_cols);
+            variance.conservativeResize(Eigen::NoChange_t(1), new_cols);
+            // conservativeResize leaves new columns uninitialized.
+            if(new_cols > old_point_cols){
+                point.rightCols(new_cols - old_point_cols).fill(0);
+            }
+            if(new_cols > old_variance_cols){
+                variance.rightCols(new_cols - old_variance_cols).fill(100);
+            }
         }
         else if(space_left < 0){
             point.conservativeResize(Eigen::NoChange_t(3), point.cols()+resize_step);
-            variance.conservativeResize(Eigen::NoChange_t(1), point.cols() + resize_step);
+            // point.cols() is already the grown size.
+            variance.conservativeResize(Eigen::NoChange_t(1), point.cols());
             point.rightCols(resize_step).fill(0);
             variance.rightCols(resize_step).fill(100);
         }
@@ -149,7 +160,8 @@ public:
         //add a point
         if( num_point+1 > point.cols()){
             point.conservativeResize(Eigen::NoChange_t(3), point.cols()+resize_step);
-            variance.conservativeResize(Eigen::NoChange_t(1), point.cols() + resize_step);
+            // point.cols() is already the grown size.
+            variance.conservativeResize(Eigen::NoChange_t(1), point.cols());
             point.rightCols(resize_step).fill(0);
             variance.rightCols(resize_step).fill(100);
         }
@@ -161,7 +173,8 @@ public:
         //add a point with variance
         if( num_point+1 > point.cols()){
             point.conservativeResize(Eigen::NoChange_t(3), point.cols()+resize_step);
-            variance.conservativeResize(Eigen::NoChange_t(1), point.cols() + resize_step);
+            // point.cols() is already the grown size.
+            variance.conservativeResize(Eigen::NoChange_t(1), point.cols());
             point.rightCols(resize_step).fill(0);
             variance.rightCols(resize_step).fill(100);
         }
@@ -171,8 +184,11 @@ public:
     }
     PointWithVariance getPointWithVariance(int index){
         //get a point with variance
-        if(index > num_point){
-            std::cout << "error, out of range. " <<std::endl;
+        if(index < 0 || index >= num_point){
+            std::cerr << "error, out of range. " << std::endl;
+            PointWithVariance result_point = PointWithVariance::Zero();
+            result_point(3, 0) = 100;
+            return result_point;
         }
         Eigen::Matrix<double, 4, 1> result_point;
         result_point.topRows(3) = point.col(index);
@@ -188,24 +204,42 @@ public:
         std::cout<<"size of matrix: \n"<<point.cols()<<std::endl;
     }
     void printVariance(){
-        std::cout << "num_point: " << num_point << " variance: " <<
-                  " max " << variance.leftCols(num_point).maxCoeff() << " min " << variance.leftCols(num_point).minCoeff() << std::endl;
-        double count_variance[10];
-        for(double i : count_variance){
-            i = 0;
+        if(num_point > 0){
+            std::cout << "num_point: " << num_point << " variance: " <<
+                      " max " << variance.leftCols(num_point).maxCoeff() << " min " << variance.leftCols(num_point).minCoeff() << std::endl;
         }
+        else{
+            // Empty block has no max or min. Skip the reduction so num_point 0 does not crash.
+            std::cout << "num_point: " << num_point << " variance: " << std::endl;
+        }
+        double count_variance[10] = {0};
         for(int i = 0; i < num_point; i++){
-            count_variance[int(variance(i) * 10)]++;
+            // Bucket is variance * 10. Clamp into [0, 9]. Variance 100 is the unusable default.
+            double scaled = variance(0, i) * 10.0;
+            int bucket = 0;
+            if(scaled >= 9.0){
+                bucket = 9;
+            }
+            else if(scaled > 0.0){
+                bucket = int(scaled);
+            }
+            count_variance[bucket] += 1.0;
         }
-        for(double i : count_variance){
-            i=i/num_point*100;
-            std::cout << int(i) <<"%";
+        for(int b = 0; b < 10; b++){
+            double percentage = 0.0;
+            if(num_point > 0){
+                percentage = count_variance[b] / static_cast<double>(num_point) * 100.0;
+            }
+            std::cout << int(percentage) << "%";
         }
         std::cout<<std::endl;
     }
     PointMatrix copyAndTransform(Transf & transf){
         //copy a PointMatrix and transform it
         PointMatrix points_transformed(*this);//copy, so we can return a new PointMatrix
+        if(num_point == 0){
+            return points_transformed;
+        }
         Eigen::Matrix<double, 4, Eigen::Dynamic> tmp_point_expend;
         tmp_point_expend = Eigen::MatrixXd::Zero(4, 1).replicate(1, num_point);
         tmp_point_expend.topRows(3) = points_transformed.point.leftCols(num_point);
@@ -216,6 +250,9 @@ public:
     }
     void transformPoints(Transf & trans){
         //transform points
+        if(num_point == 0){
+            return;
+        }
         if(trans(0, 0) == 0 && trans(1, 0) == 0 && trans(2, 0) == 0){
             std::cout<<"ERROR: Wrong Trans!";
         }
