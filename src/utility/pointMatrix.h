@@ -114,8 +114,12 @@ public:
         }
         clear();
 
-        point.leftCols(points_copy.cols()) = points_copy.topRows(3);
         num_point = int(points_copy.cols());
+        // No columns means no storage. A row view would offset a null pointer.
+        if(num_point == 0){
+            return *this;
+        }
+        point.leftCols(points_copy.cols()) = points_copy.topRows(3);
         if(points_copy.rows() == 4){
             variance.leftCols(points_copy.cols()) = points_copy.row(3);
         }
@@ -134,8 +138,8 @@ public:
             int old_point_cols = int(point.cols());
             int old_variance_cols = int(variance.cols());
             int new_cols = points_add.num_point + num_point + resize_step;
-            point.conservativeResize(Eigen::NoChange_t(3), new_cols);
-            variance.conservativeResize(Eigen::NoChange_t(1), new_cols);
+            point.conservativeResize(Eigen::NoChange, new_cols);
+            variance.conservativeResize(Eigen::NoChange, new_cols);
             // conservativeResize leaves new columns uninitialized.
             if(new_cols > old_point_cols){
                 point.rightCols(new_cols - old_point_cols).fill(0);
@@ -145,9 +149,9 @@ public:
             }
         }
         else if(space_left < 0){
-            point.conservativeResize(Eigen::NoChange_t(3), point.cols()+resize_step);
+            point.conservativeResize(Eigen::NoChange, point.cols()+resize_step);
             // point.cols() is already the grown size.
-            variance.conservativeResize(Eigen::NoChange_t(1), point.cols());
+            variance.conservativeResize(Eigen::NoChange, point.cols());
             point.rightCols(resize_step).fill(0);
             variance.rightCols(resize_step).fill(100);
         }
@@ -159,9 +163,9 @@ public:
     void addPoint(const Eigen::Matrix<double, 3, 1> & point_add){
         //add a point
         if( num_point+1 > point.cols()){
-            point.conservativeResize(Eigen::NoChange_t(3), point.cols()+resize_step);
+            point.conservativeResize(Eigen::NoChange, point.cols()+resize_step);
             // point.cols() is already the grown size.
-            variance.conservativeResize(Eigen::NoChange_t(1), point.cols());
+            variance.conservativeResize(Eigen::NoChange, point.cols());
             point.rightCols(resize_step).fill(0);
             variance.rightCols(resize_step).fill(100);
         }
@@ -172,9 +176,9 @@ public:
     void addPointWithVariance(const Eigen::Matrix<double, 4, 1> & point_add_with_variance){
         //add a point with variance
         if( num_point+1 > point.cols()){
-            point.conservativeResize(Eigen::NoChange_t(3), point.cols()+resize_step);
+            point.conservativeResize(Eigen::NoChange, point.cols()+resize_step);
             // point.cols() is already the grown size.
-            variance.conservativeResize(Eigen::NoChange_t(1), point.cols());
+            variance.conservativeResize(Eigen::NoChange, point.cols());
             point.rightCols(resize_step).fill(0);
             variance.rightCols(resize_step).fill(100);
         }
@@ -272,9 +276,26 @@ public:
             Eigen::Matrix<double, 3, Eigen::Dynamic> remove_centroid =
                     point.leftCols(num_point) - centroid.replicate(1, num_point);
             Eigen::Matrix3d covarianceMat = remove_centroid * remove_centroid.adjoint() / num_point;
-            Eigen::EigenSolver<Eigen::Matrix3d> eig(covarianceMat);
-            eigenvalMat = eig.pseudoEigenvalueMatrix();
-            eigenvectorMat = eig.pseudoEigenvectors();
+            // EigenSolver can report Success for a non-finite covariance.
+            // Check that before the solve. Both failures store the clear_quick state.
+            bool failed = !covarianceMat.allFinite();
+            if(!failed){
+                Eigen::EigenSolver<Eigen::Matrix3d> eig(covarianceMat);
+                if(eig.info() != Eigen::Success){
+                    failed = true;
+                }else{
+                    eigenvalMat = eig.pseudoEigenvalueMatrix();
+                    eigenvectorMat = eig.pseudoEigenvectors();
+                }
+            }
+            if(failed){
+                eigenvectorMat.fill(0);
+                eigenvalMat.fill(0);
+                min_vector.fill(0);
+                eig_sorted.clear();
+                min_value = -1;
+                return;
+            }
 
             for(int i = 0; i < 3; i ++){
                 eig_sorted.emplace(eigenvalMat(i, i), eigenvectorMat.col(i));
@@ -289,6 +310,10 @@ public:
             min_vector = (eigenvalMat(0, 0) < eigenvalMat(1, 1)) ?
                     ((eigenvalMat(0, 0) < eigenvalMat(2, 2)) ? (eigenvectorMat.col(0)) : (eigenvectorMat.col(2))) :
                     ((eigenvalMat(1, 1) < eigenvalMat(2, 2)) ? (eigenvectorMat.col(1)) : (eigenvectorMat.col(2)));
+            // EigenSolver may return a non-unit column, so scale the chosen normal to length 1.
+            if (min_vector.allFinite() && min_vector.squaredNorm() > 0.0) {
+                min_vector.normalize();
+            }
         }else{
            std::cout<< "eigenDecomposition error: no point"<<std::endl;
        }
