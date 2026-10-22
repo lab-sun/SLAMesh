@@ -398,6 +398,8 @@ The point matrix container can be tested on the host without ROS. Pass `-DSANITI
 
 ```
 cmake -S tests/host -B build-tests && cmake --build build-tests && ./build-tests/test_point_matrix 2000
+./build-tests/stress_point_matrix 1 20000
+CC=clang CXX=clang++ cmake -S tests/host -B build -DFUZZ=ON && cmake --build build && ./build/fuzz_point_matrix -max_total_time=60
 ```
 
 

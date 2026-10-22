@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <sstream>
 #include <string>
@@ -640,6 +641,35 @@ static void test_eigen() {
     CHECK(noisy_other > 0.5);
 }
 
+static void test_eigen_nonfinite() {
+    // One NaN coordinate makes the covariance non-finite. EigenSolver then
+    // returns NoConvergence and leaves its matrices uninitialized.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    PointMatrix bad;
+    bad.addPoint(Point(1.0, 2.0, 3.0));
+    bad.addPoint(Point(0.0, -1.0, 4.0));
+    bad.addPoint(Point(nan, 0.5, -2.0));
+    bad.eigenDecomposition();
+    CHECK(bad.num_point == 3);
+    CHECK(bad.point(0, 0) == 1.0);
+    CHECK(bad.min_value == -1.0);
+    CHECK(bad.min_vector.isZero());
+    CHECK(bad.eigenvalMat.isZero());
+    CHECK(bad.eigenvectorMat.isZero());
+    CHECK(bad.eig_sorted.empty());
+
+    // Inf can make EigenSolver report NumericalIssue instead. Same cleared state.
+    PointMatrix infinite;
+    infinite.addPoint(Point(0.0, 0.0, 0.0));
+    infinite.addPoint(Point(std::numeric_limits<double>::infinity(), 1.0, -1.0));
+    infinite.eigenDecomposition();
+    CHECK(infinite.min_value == -1.0);
+    CHECK(infinite.min_vector.isZero());
+    CHECK(infinite.eigenvalMat.isZero());
+    CHECK(infinite.eigenvectorMat.isZero());
+    CHECK(infinite.eig_sorted.empty());
+}
+
 static void test_print_variance() {
     PointMatrix defaults;
     for (int i = 0; i < 5; ++i) {
@@ -751,6 +781,7 @@ int main(int argc, char** argv) {
     test_get_point();
     test_transform();
     test_eigen();
+    test_eigen_nonfinite();
     test_print_variance();
     test_random(iterations);
 
