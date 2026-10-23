@@ -392,6 +392,14 @@ Most of the code are build from scratch , but we also want to acknowledge the fo
 
 [VGICP](https://github.com/SMRT-AIST/fast_gicp): multi-thread
 
+## Host tests
 
+The point matrix container can be tested on the host without ROS. Pass `-DSANITIZE=ON` on the cmake command to enable address and undefined behavior sanitizers.
+
+```
+cmake -S tests/host -B build-tests && cmake --build build-tests && ./build-tests/test_point_matrix 2000
+./build-tests/stress_point_matrix 1 20000
+CC=clang CXX=clang++ cmake -S tests/host -B build -DFUZZ=ON && cmake --build build && ./build/fuzz_point_matrix -max_total_time=60
+```
 
 
